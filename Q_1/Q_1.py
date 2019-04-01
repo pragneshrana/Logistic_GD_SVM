@@ -8,7 +8,7 @@ import random
 
 
 # Loading Dataset
-dataset = pd.read_csv('Dataset_1_Team_41.csv')
+dataset = pd.read_csv('Dataset_4_Team_41.csv')
 column = ['X_1', 'X_2', 'Class_value']
 mean_file  = open("mean_file.txt","a+")
 varaince_file = open("varaince_file.txt","w+")
@@ -37,52 +37,86 @@ class_sample_count = pd.DataFrame(dataset.Class_label.value_counts())
 # min_data_in_class = class_sample_count.min() #Class of each class is not same
 
 
-#####################################################
-# Dataset sepearation of class based on training set#
-#####################################################
-
-def dataset_seperation(dataset, Data_class):
-    '''
-    Seperation of dataset based on class value 
-    '''
-    class_dataset = pd.DataFrame([])
-    for i in range(len(dataset)):
-        if (dataset.iloc[:, -1][i] == Data_class):
-            class_dataset = class_dataset.append(dataset.iloc[i, :])
-    return class_dataset
-
 ########################
 # Splitting the dataset#
 ########################
 def split_dataframe(df, p=[0.65, 0.35]):
-    '''
-    It will split the dataset into training, validation and testing set based on the given fractin value
-    of p. By default p=[0.7,0.15,0.15]
-    '''
+        '''
+        It will split the dataset into training, validation and testing set based on the given fractin value
+        of p. By default p=[0.7,0.15,0.15]
+        '''
 
-    train,test = np.split(df.sample(frac=1,replace=False,random_state = 41), [int(p[0]*len(df))])  # split by [0-.7,.7-.85,.85-1]
-    return train,test
+        train,test = np.split(df.sample(frac=1,replace=False,random_state = 41), [int(p[0]*len(df))])  # split by [0-.7,.7-.85,.85-1]
+        return train,test
 
 training_set ,testing_set = split_dataframe(dataset)
 
 ####################
 # Intial Conditions#
 ####################
-ita = 0.01 #learning rate
-no_of_iterarion = 0
+learning_rate = 0.00001 
 
 ##Class wise intail weights 
-Intial_weights= []
-Intial_wei = []
-for i in range(no_of_class):
-    Intial_wei = np.linspace(i+3,i+7,no_of_feature+1) #INTIAL WEIGHTS DEFINED
-    Intial_weights.append(Intial_wei) #Intial_weights Array 
+weights = np.linspace(3.5,7.9,no_of_feature) #INTIAL WEIGHTS DEFINED
 
-def sigmoid(feature_vector,weights):
-    '''
-    It calculates the sigmoid output y(k) of feature vector
-    '''
-    t = np.dot(feature_vector.T, weights)
+################
+# Batch Graient#
+################
+def sigmoid_probabilty(feature_matrix,weights):
+        '''
+        It calculates the sigmoid output y(k) of feature vector
+        feature_vector : All feature vector matrix 
+        weights : weights vector 
+        '''
+        t = np.dot(feature_matrix, weights)   #(n*p) (p*1) = (n*1)
+        probability = []
+        for i in range(len(t)):
+                probability.append(1 / (1+np.exp(-t[i])))    #predicted value 
+        return probability
+
+def predicted_y(probability):
+        prediction = []
+        for i in range(len(probability)):
+                if(probbility[i] > 0.5):
+                        prediction.append(1)
+                else:
+                        prediction.append(0)
+        return prediction
+
+
+def Graient_descent(weights,actual_y,learning_rate,features):
+        m = len(actual_y)
+        no_of_iterarion = 0
+        accuracy = 0
+        while (accuracy != 1):
+                predicted_y = sigmoid_probabilty(features,weights)
+                weights -= (learning_rate/m) * np.dot(features.T,(predicted_y - actual_y))
+                accuracy = accuracy_result(actual_y,predicted_y)
+        return weights,no_of_iterarion
+
+
+def accuracy_result(y_predicted,y_actaul):
+        y_predicted = list(y_predicted)
+        correct_prediction = 0        
+        wrong_prediction = 0
+        count = 0
+        for i in range(len(y_actaul)):
+                count += 1 
+                if(y_predicted[i] == y_actaul[i]):
+                        correct_prediction += 1
+                else:
+                        wrong_prediction += 1
+                
+        accu = correct_prediction / (correct_prediction+wrong_prediction)
+        print('accu: ', accu)
+        return accu
+
+
+               
+feature_matrix = training_set.iloc[:,:-1]
+y = training_set.iloc[:,-1]
+Weight_result , iteration  = Graient_descent(weights,y,learning_rate,feature_matrix)
+
     
 
 
