@@ -8,7 +8,7 @@ import random
 
 
 # Loading Dataset
-dataset = pd.read_csv('Dataset_1_Team_41.csv')
+dataset = pd.read_csv('Dataset_4_Team_41.csv')
 column = ['X_1', 'X_2', 'Class_value']
 
 # #Plotting data points
@@ -53,14 +53,11 @@ training_set ,testing_set = split_dataframe(dataset)
 ####################
 # Intial Conditions#
 ####################
-learning_rate = 0.05
-no_of_iterarion = 2000
-
+learning_rate = 0.5
+no_of_iterarion = 1000
 
 ##Class wise intail weights 
-weights = np.linspace(-1,1,no_of_feature+1) #INTIAL WEIGHTS DEFINED For Two class
-
-# weights_matrix = np.random.random((N,N))
+weights = np.linspace(-0.2,0.2,no_of_feature+1) #INTIAL WEIGHTS DEFINED
 
 ################
 # Batch Graient#
@@ -80,33 +77,6 @@ def sigmoid_probabilty(feature_matrix,weights):
                 probability.append(1 / (1+np.exp(-t[i])))    #predicted value 
         return probability
 
-def softmax_probabilioty(feature_matrix,weights):
-        '''
-        It calculates the sigmoid output y(k) of feature vector
-        feature_vector : All feature vector matrix 
-        weights : weights vector 
-        '''
-        t = np.dot(feature_matrix, weights)   #(n*p) (p*k) = (n*k)  
-        probability = []
-
-        # if(t.size == 1):
-        #         t =np.reshape(t, (1,1))
-        for i in range(t.size):
-                probability.append(1 / (1+np.exp(-t[i])))    #predicted value 
-        return probability
-
-def one_hot_encoding(y_actual):
-        # Number of class in the dataset
-        classes = y_actual.unique()  # classes in dataset
-        classes = np.sort(classes)
-        no_of_class = len(classes)  # number of class
-        OHE_Matrix = np.zeros([len(y_actual),no_of_class])
-        for i in range(len(y_actual)):
-                OHE_Matrix[i,y_actual[i]] = 1
-        return OHE_Matrix
-oo =one_hot_encoding(training_set.iloc[:,-1])
-        
-
 def predicted_y(probability):
         '''
         It will classify the data based on the probability array 
@@ -123,7 +93,6 @@ def predicted_y(probability):
                         prediction.append(0)
         return prediction
 
-
 def Graient_descent(weights,actual_y,learning_rate,features,no_of_iterarion = 500):
         '''
         It wil run gradient descent till specified no_of_iterarion.
@@ -139,7 +108,7 @@ def Graient_descent(weights,actual_y,learning_rate,features,no_of_iterarion = 50
                 iterated += 1 
                 predicted_y = sigmoid_probabilty(features,weights)
                 weights -= (learning_rate/m) * np.dot(features.T,(predicted_y - actual_y))
-                accuracy,error = accuracy_result(actual_y,predicted_y)
+        accuracy,error = accuracy_result(actual_y,predicted_y)
 
                 # #Error _Diff adjustment 
                 # new_error = error
@@ -151,7 +120,6 @@ def Graient_descent(weights,actual_y,learning_rate,features,no_of_iterarion = 50
                 # error_array.insert(1,error)
 
         return weights,no_of_iterarion
-
 
 def accuracy_result(y_predicted,y_actaul):
         '''
@@ -251,7 +219,7 @@ def confusion_matrix(actual_result, predicted_result):
 feature_matrix_training = training_set.iloc[:,:-1]       #feture matrix of data
 feature_matrix_training = processable_feature_matrix(feature_matrix_training)
 y_train = training_set.iloc[:,-1]
-Weight_result , iteration  = Graient_descent(weights,y_train,learning_rate,feature_matrix_training,accuracy=0.978)
+Weight_result , iteration  = Graient_descent(weights,y_train,learning_rate,feature_matrix_training,no_of_iterarion)
 
 #Result Writing to file 
 file = open('Result.txt','+a')
