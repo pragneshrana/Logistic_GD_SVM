@@ -8,7 +8,22 @@ import random
 
 
 # Loading Dataset
-dataset = pd.read_csv('Dataset_1_Team_41.csv')
+dataset = pd.read_csv('Dataset_4_Team_41.csv')
+
+def Normalized_Dataset(dataset):
+        '''
+        Normalize the dataset 
+        Make sure last column is result
+        z_i=\frac{x_i-\min(x)}{\max(x)-\min(x)}
+        '''
+        update_col =[]
+        for i in range(dataset.shape[1]-1):
+                max = dataset.iloc[:,i].max()
+                min = dataset.iloc[:,i].min()
+                dataset.iloc[:,i] = ( dataset.iloc[:,i] - min)/(max - min)
+        return dataset
+dataset = Normalized_Dataset(dataset)
+
 column = ['X_1', 'X_2', 'Class_value']
 
 # #Plotting data points
@@ -34,7 +49,7 @@ class_sample_count = pd.DataFrame(dataset.Class_label.value_counts())
 # min_data_in_class = class_sample_count.min() #Class of each class is not same
 
 
-########################
+########################                       
 # Splitting the dataset#
 ########################
 def split_dataframe(df, p=[0.65, 0.35]):
@@ -53,13 +68,14 @@ training_set ,testing_set = split_dataframe(dataset)
 ####################
 # Intial Conditions#
 ####################
-learning_rate = 0.05
-no_of_iterarion = 2000
-
+learning_rate = 0.9
+no_of_iterarion = 350
+Intial_weights = np.array([])
 
 ##Class wise intail weights 
-weights = np.linspace(-1,1,no_of_feature+1) #INTIAL WEIGHTS DEFINED For Two class
-
+for i in range(no_of_class):
+        Intial_weights = np.append(Intial_weights,np.linspace(-3*i+21,1*i+58,no_of_feature+1),axis=0) #INTIAL WEIGHTS DEFINED For Two class
+Intial_weights = Intial_weights.reshape(no_of_feature+1,no_of_class)
 # weights_matrix = np.random.random((N,N))
 
 ################
@@ -80,20 +96,25 @@ def sigmoid_probabilty(feature_matrix,weights):
                 probability.append(1 / (1+np.exp(-t[i])))    #predicted value 
         return probability
 
-def softmax_probabilioty(feature_matrix,weights):
+def softmax_probability(feature_matrix,weights):
         '''
-        It calculates the sigmoid output y(k) of feature vector
+        It calculates the softmax output y(k) of feature vector for all class
         feature_vector : All feature vector matrix 
         weights : weights vector 
         '''
         t = np.dot(feature_matrix, weights)   #(n*p) (p*k) = (n*k)  
-        probability = []
-
+        exp_t = np.exp(t)       #into exp list
+        probability = []        #Final probability of all data classwise
         # if(t.size == 1):
-        #         t =np.reshape(t, (1,1))
-        for i in range(t.size):
-                probability.append(1 / (1+np.exp(-t[i])))    #predicted value 
-        return probability
+        # t =np.reshape(t, (1,1))
+        for i in range(len(exp_t)):
+                data_all_class_probability = [] #classwise probability of alll data 
+                sum_list_data= 0
+                sum_list_data = sum(exp_t[i])   #denomminator sum
+                for j in range(len(exp_t[i])):
+                        data_all_class_probability.append(exp_t[i][j] / sum_list_data)   #predicted value 
+                probability.append(data_all_class_probability)
+        return probability      #return probablity of all class for all data 
 
 def one_hot_encoding(y_actual):
         # Number of class in the dataset
@@ -104,7 +125,8 @@ def one_hot_encoding(y_actual):
         for i in range(len(y_actual)):
                 OHE_Matrix[i,y_actual[i]] = 1
         return OHE_Matrix
-oo =one_hot_encoding(training_set.iloc[:,-1])
+        #Evey row represents one hot encoder 
+t_nk = one_hot_encoding(training_set.iloc[:,-1])
         
 
 def predicted_y(probability):
@@ -117,29 +139,32 @@ def predicted_y(probability):
         # if(t.size == 1):
         #         t =np.reshape(t, (1,1))
         for i in range(len(probability)):
-                if(probability[i] > 0.5):
-                        prediction.append(1)
-                else:
-                        prediction.append(0)
+                for j in range(len(probability[i])):
+                        maximum = max(probability[i])
+                        if(probability[i][j] == maximum):
+                                prediction.append(j)
         return prediction
 
 
-def Graient_descent(weights,actual_y,learning_rate,features,no_of_iterarion = 500):
+def Gradient_Descent(weights,actual_y,one_hot_encoding,learning_rate,features,no_of_iterarion = 500):
         '''
         It wil run gradient descent till specified no_of_iterarion.
         It calculates the weights and return the weights and no of iterations performed.
         '''
         m = len(actual_y)
         iterated = 0
-        accuracy = 0            #Accuracy initialized 
-        error = 1               #Error intialized
-        error_array = list(np.zeros(2))
-        error_diff = 1         #Error Diff Intialied 
+        # accuracy = 0            #Accuracy initialized 
+        # error = 1               #Error intialized
+        # error_array = list(np.zeros(2))
+        # error_diff = 1         #Error Diff Intialied 
         while (iterated < no_of_iterarion):     #Tolerance
                 iterated += 1 
-                predicted_y = sigmoid_probabilty(features,weights)
-                weights -= (learning_rate/m) * np.dot(features.T,(predicted_y - actual_y))
-                accuracy,error = accuracy_result(actual_y,predicted_y)
+                probability = softmax_probability(features,weights)
+                weights-= (learning_rate/m) *np.dot(features.T,(probability-one_hot_encoding))
+                prediction =predicted_y(probability)
+                accuracy,error = accuracy_result(actual_y,prediction)
+        print('error: ', error)
+        print('accuracy: ', accuracy)
 
                 # #Error _Diff adjustment 
                 # new_error = error
@@ -149,7 +174,7 @@ def Graient_descent(weights,actual_y,learning_rate,features,no_of_iterarion = 50
                 # #shifting array from first place to zero 
                 # error_array.insert(0,error_array[1])    
                 # error_array.insert(1,error)
-
+        print('prediction , actual_y: ', prediction ,actual_y)
         return weights,no_of_iterarion
 
 
@@ -172,8 +197,6 @@ def accuracy_result(y_predicted,y_actaul):
                 
         accu = correct_prediction / (correct_prediction+wrong_prediction)
         error = wrong_prediction / (correct_prediction+wrong_prediction)
-        print('error: ', error)
-        print('accu: ', accu)
         return accu,error 
 
 def processable_feature_matrix(feature_matrix):
@@ -251,8 +274,8 @@ def confusion_matrix(actual_result, predicted_result):
 feature_matrix_training = training_set.iloc[:,:-1]       #feture matrix of data
 feature_matrix_training = processable_feature_matrix(feature_matrix_training)
 y_train = training_set.iloc[:,-1]
-Weight_result , iteration  = Graient_descent(weights,y_train,learning_rate,feature_matrix_training,accuracy=0.978)
-
+Weight_result , iteration  = Gradient_Descent(Intial_weights,y_train,t_nk,learning_rate,feature_matrix_training,no_of_iterarion)
+print()
 #Result Writing to file 
 file = open('Result.txt','+a')
 file.write('\n \n Weight_result: '+ str(Weight_result))
@@ -262,7 +285,7 @@ file.write('\n iteration: '+ str(iteration))
 feature_matrix_testing = testing_set.iloc[:,:-1]
 feature_matrix_testing = processable_feature_matrix(feature_matrix_testing)
 y_actaul_test =testing_set.iloc[:,-1]   #dataset
-y_probability = sigmoid_probabilty(feature_matrix_testing,weights) #obtained Probability 
+y_probability = softmax_probability(feature_matrix_testing,Weight_result) #obtained Probability 
 y_predicted_test = predicted_y(y_probability)   #Classified Results
 test_accu,test_error = accuracy_result(y_predicted_test,y_actaul_test)  
 file.write('\n test_error: '+ str(test_error))
@@ -300,7 +323,7 @@ for i in range(len(x1)):
         dataframe = dataframe.append(data_vector, ignore_index=True)
 
 feature_matrix_boundary = processable_feature_matrix(dataframe)
-y_probability = sigmoid_probabilty(feature_matrix_boundary,weights) #obtained Probability 
+y_probability = softmax_probability(feature_matrix_boundary,Weight_result) #obtained Probability 
 y_predicted_boundary = predicted_y(y_probability)   #Classified Results
 
 plt.xlim(training_set['x_1'].min(), training_set['x_1'].max())
@@ -311,8 +334,12 @@ plt.ylabel('x_2', fontsize=16)
 for i in range(len(dataframe)):
         if(y_predicted_boundary[i] == 0):
                 plt.scatter(dataframe.iloc[i,1], dataframe.iloc[i,2], marker='*',c='pink')
-        else:
+                continue
+        elif(y_predicted_boundary[i] == 1):
                 plt.scatter(dataframe.iloc[i,1], dataframe.iloc[i,2], marker='*',c='yellow')
+                continue
+        else:
+                plt.scatter(dataframe.iloc[i,1], dataframe.iloc[i,2], marker='*',c='orange')
 
 
 #############################
@@ -325,8 +352,12 @@ plt.ylim(training_set['x_2'].min(), training_set['x_2'].max())
 for i in range(len(x1)):
         if(y_train[i] == 0):
                 plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='red')
+                continue
+        elif(y_train[i] == 1):
+                plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='blue')
+                continue
         else:
-                plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='green')
+                plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='black')
 plt.savefig('decision.png')
 plt.show()
 
