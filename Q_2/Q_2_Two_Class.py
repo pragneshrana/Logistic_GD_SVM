@@ -34,9 +34,11 @@ def factorial(n):
         Calculates the factorial
         '''
         multiplication = 1
-        for i in range(n):
-                multiplication = multiplication * n
+        for i in range(1,n+1):
+                multiplication = multiplication * i
         return multiplication 
+
+# ans_fac = factorial(5)
 
 
 def choose(n,r):
@@ -45,6 +47,7 @@ def choose(n,r):
         '''
         n_c_r = factorial(n) / (factorial(r)*factorial(n-r))
         return n_c_r
+# ans =choose(15,5)
 
 def mapFeature(dataset,degree):
         '''
@@ -66,35 +69,13 @@ def mapFeature(dataset,degree):
                         database[str(j) + str(',') +str(r)] = colm_list
         return database
 
-data = [[1,2],[2,3],[3,4]]
-dataset = pd.DataFrame(data,columns=['Name','Age'])
-dataset = mapFeature(dataset,3)
-dataset.to_csv('file.csv')
+# ##Testing Of Mapping 
+# data = [[1,2],[2,3],[3,4]]
+# dataset = pd.DataFrame(data,columns=['Name','Age'])
+# dataset = mapFeature(dataset,3)
+# dataset.to_csv('file.csv')
 
-                        
-
-
-#     degree = 6
-#     out = np.ones(X.shape[0])[:,np.newaxis]
-#     for i in range(1, degree+1):
-#         for j in range(i+1):
-#             out = np.hstack((out, np.multiply(np.power(X1, i-j),                                     np.power(X2, j))[:,np.newaxis]))
-#     return out
-
-dataset = mapFeature(dataframe.iloc[:,0], dataframe.iloc[:,1])
-
-# #Plotting data points
-# fig = plt.figure()
-# ax = plt.axes(projection='3d')
-# z = dataset['Class_label']
-# x1 = dataset['x_1']
-# x2 = dataset['x_2']
-# ax.scatter(x1, x2, z, c='r', marker='o')
-# ax.set_xlabel('X1')
-# ax.set_ylabel('X2')
-# ax.set_zlabel('Y')
-# plt.show()
-
+##Processing 
 # Number of class in the dataset
 Data_class = dataset.iloc[:, -1].unique()  # classes in dataset
 Data_class = np.sort(Data_class)
