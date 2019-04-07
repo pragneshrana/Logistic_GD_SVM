@@ -11,6 +11,20 @@ import random
 dataset = pd.read_csv('Dataset_4_Team_41.csv')
 column = ['X_1', 'X_2', 'Class_value']
 
+def Normalized_Dataset(dataset):
+        '''
+        Normalize the dataset 
+        Make sure last column is result
+        z_i=\frac{x_i-\min(x)}{\max(x)-\min(x)}
+        '''
+        update_col =[]
+        for i in range(dataset.shape[1]-1):
+                max = dataset.iloc[:,i].max()
+                min = dataset.iloc[:,i].min()
+                dataset.iloc[:,i] = ( dataset.iloc[:,i] - min)/(max - min)
+        return dataset
+dataset = Normalized_Dataset(dataset)
+
 # #Plotting data points
 # fig = plt.figure()
 # ax = plt.axes(projection='3d')
@@ -77,6 +91,14 @@ def sigmoid_probabilty(feature_matrix,weights):
                 probability.append(1 / (1+np.exp(-t[i])))    #predicted value 
         return probability
 
+def log_loss_function(weights, X_t, y_t,lambda_t=0):
+        m = len(y_t)
+        ones_list = np.ones(len(y_t))
+        J = (-1/m) * (np.dot(y_t.T,np.log(sigmoid_probabilty(X_t,weights))) + np.dot((ones_list - y_t).T,np.log(ones_list - sigmoid_probabilty(X_t,weights))))
+        reg = (lambda_t/(2*m)) * (weights.T @ weights)
+        J = J + reg
+        return J
+
 def predicted_y(probability):
         '''
         It will classify the data based on the probability array 
@@ -104,11 +126,18 @@ def Graient_descent(weights,actual_y,learning_rate,features,no_of_iterarion = 50
         error = 1               #Error intialized
         error_array = list(np.zeros(2))
         error_diff = 1         #Error Diff Intialied 
+        log_loss = []
+        accuracy_list = []
+        error_list =[]
         while (iterated < no_of_iterarion):     #Tolerance
                 iterated += 1 
-                predicted_y = sigmoid_probabilty(features,weights)
-                weights -= (learning_rate/m) * np.dot(features.T,(predicted_y - actual_y))
-        accuracy,error = accuracy_result(actual_y,predicted_y)
+                probability = sigmoid_probabilty(features,weights)
+                weights -= (learning_rate/m) * np.dot(features.T,(probability - actual_y))
+                log_loss.append(log_loss_function(weights,features,actual_y))
+                prediction_y = predicted_y(probability)
+                accuracy,error = accuracy_result(actual_y,prediction_y)
+                accuracy_list.append(accuracy)
+                error_list.append(error)
 
                 # #Error _Diff adjustment 
                 # new_error = error
@@ -119,7 +148,7 @@ def Graient_descent(weights,actual_y,learning_rate,features,no_of_iterarion = 50
                 # error_array.insert(0,error_array[1])    
                 # error_array.insert(1,error)
 
-        return weights,no_of_iterarion
+        return weights,no_of_iterarion,log_loss,accuracy_list,error_list
 
 def accuracy_result(y_predicted,y_actaul):
         '''
@@ -140,8 +169,6 @@ def accuracy_result(y_predicted,y_actaul):
                 
         accu = correct_prediction / (correct_prediction+wrong_prediction)
         error = wrong_prediction / (correct_prediction+wrong_prediction)
-        print('error: ', error)
-        print('accu: ', accu)
         return accu,error 
 
 def processable_feature_matrix(feature_matrix):
@@ -219,7 +246,7 @@ def confusion_matrix(actual_result, predicted_result):
 feature_matrix_training = training_set.iloc[:,:-1]       #feture matrix of data
 feature_matrix_training = processable_feature_matrix(feature_matrix_training)
 y_train = training_set.iloc[:,-1]
-Weight_result , iteration  = Graient_descent(weights,y_train,learning_rate,feature_matrix_training,no_of_iterarion)
+Weight_result , iteration,log_loss,probability_list,error_list   = Graient_descent(weights,y_train,learning_rate,feature_matrix_training,no_of_iterarion)
 
 #Result Writing to file 
 file = open('Result.txt','+a')
@@ -235,6 +262,20 @@ y_predicted_test = predicted_y(y_probability)   #Classified Results
 test_accu,test_error = accuracy_result(y_predicted_test,y_actaul_test)  
 file.write('\n test_error: '+ str(test_error))
 file.write('\n test_accu: '+ str(test_accu))
+
+############################################
+#           log_loss plotting              #
+############################################
+
+plt.title('Log Loss', fontsize=20)
+plt.xlabel('Error / Accuracy ', fontsize=18)
+plt.ylabel('log_loss', fontsize=16)
+plt.plot(probability_list,log_loss )
+plt.plot(error_list,log_loss)
+plt.savefig('Error_Accuracy_Plot')
+
+print('Pragnesh Work!')
+
 
 ############################################
 # Creation of confusion matrix and plotting#
@@ -297,5 +338,6 @@ for i in range(len(x1)):
                 plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='green')
 plt.savefig('decision.png')
 plt.show()
+file.close()
 
 

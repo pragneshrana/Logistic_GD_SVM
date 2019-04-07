@@ -1,0 +1,16 @@
+
+ 
+ Weight_result: [ 1.38741234  3.89979993 -6.65483991]
+ iteration: 1000
+ test_error: 0.12
+ test_accu: 0.88
+ 
+ Weight_result: [ 1.38741234  3.89979993 -6.65483991]
+ iteration: 1000
+ test_error: 0.12
+ test_accu: 0.88
+ 
+ Weight_result: [ 1.38741234  3.89979993 -6.65483991]
+ iteration: 1000
+ test_error: 0.12
+ test_accu: 0.88
