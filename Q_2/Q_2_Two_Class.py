@@ -53,18 +53,21 @@ def mapFeature(dataset,degree):
         Works only for two feature 
         '''
         database = pd.DataFrame([])
-        n= degree
+        n= degree+1
         no_of_feature = dataset.shape[1]-1  # -1 as last column is outcome
         x1=dataset.iloc[:,0] 
         x2=dataset.iloc[:,1]
         for j in range(n): #for cal power
-                for r in range(n): #Nowards Loop calculates power
+                for r in range(j+1): #Nowards Loop calculates power
+                        print('r,J:',r,j)
                         colm_list = []
                         for i in range(len(dataset)):
                                 colm_list.append(choose(j,r) * pow(x1[i],j-r) * pow(x2[i],r))
                         database[str(j) + str(',') +str(r)] = colm_list
         return database
 
+data = [[1,2],[2,3],[3,4]]
+dataset = pd.DataFrame(data,columns=['Name','Age'])
 dataset = mapFeature(dataset,3)
 dataset.to_csv('file.csv')
 
