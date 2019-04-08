@@ -106,7 +106,7 @@ def split_dataframe(df, p=[0.65, 0.35]):
         test = test.reset_index(drop = True) 
         X_test = test.iloc[:,:-1]       #feture matrix of data
         X_test = mapFeature(X_test,degree)
-        y_test = train.iloc[:,-1]
+        y_test = test.iloc[:,-1]
 
         return X_train,X_test,y_train,y_test
 
@@ -116,14 +116,16 @@ def split_dataframe(df, p=[0.65, 0.35]):
 ####################
 learning_rate = 0.5
 no_of_iterarion = 1000
-regularized_term = 1.5
-degree = 3
+regularized_term = 0
+degree = 2
 no_of_terms = 0
 for i in range(degree+1):
         no_of_terms += (i+1)
 
+
 ##Class wise intail weights 
 weights = np.linspace(-0.2,0.2,no_of_terms) #INTIAL WEIGHTS DEFINED
+
 
 ################
 # Batch Gradient#
@@ -327,7 +329,7 @@ plt.savefig('Error_Accuracy_Plot')
 # Creation of confusion matrix and plotting#
 ############################################
 
-confu_matrix = confusion_matrix(y_predicted_test,y_actaul_test)
+confu_matrix = confusion_matrix(y_predicted_test,y_test)
 plt.figure(figsize=(10, 7))
 sn.heatmap(confu_matrix, annot=True)
 plt.title('Confusion Matrix of Test class Dataset-2', fontsize=20)
@@ -335,16 +337,84 @@ plt.xlabel('Class', fontsize=18)
 plt.ylabel('Class', fontsize=16)
 plt.savefig('confusion.png')
 
-file.close()
-print('Pragnesh Work!')
-
 
 ############################
 # Decision Surface Plotting#
 ############################
-n=50
-x1 = list(np.linspace(training_set['x_1'].min(), training_set['x_1'].max(), n))
-x2 = list(np.linspace(training_set['x_2'].min(), training_set['x_2'].max(), n))
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+w = weights
+n=100
+#Mesh GEneration 
+x= list(np.linspace(feature_matrix_training.iloc[:,1].min(), feature_matrix_training.iloc[:,1].max(), n))
+y = list(np.linspace(feature_matrix_training.iloc[:,2].min(), feature_matrix_training.iloc[:,2].max(), n))
+X, Y = np.meshgrid(x, y)
+
+
+def pascal_triangle(degree):
+    '''
+    Gives row and column wise enrtry for given degree
+    '''
+    Pascal_list =[[1]]   #FIrst entry Defined to start 
+    for i in range(1,degree+1): #+1 As we are starting from 1
+        temp_list =[]
+        for j in range(i+1):  #+1 As we are considering last element
+            if(j==0):#First Element = 1
+                temp_list.append(1)
+                continue
+            elif(j == i):#Last Element = 1
+                temp_list.append(1)
+                continue
+            else:
+                temp_list.append(Pascal_list[i-1][j]+Pascal_list[i-1][j-1]) # Addition of Upper Two Elements 
+        Pascal_list.append(temp_list)
+    return Pascal_list
+
+Pascal_Triangle = pascal_triangle(degree)
+
+
+#F calculation based on pascal
+F= 0
+counter = 0
+for i in range(degree+1):
+    for j in range(i+1):  
+        print('i-j: ', i-j)      
+        print('j: ', j)
+        F += w[counter] * pow(X,i-j) * pow(Y,j) * Pascal_Triangle[i][j]
+        counter += 1
+
+
+fig = plt.figure()
+ax = Axes3D(fig)
+# plt.xlim(feature_matrix_training.iloc[:,1].min(), feature_matrix_training.iloc[:,1].max())
+# plt.ylim(feature_matrix_training.iloc[:,2].min(), feature_matrix_training.iloc[:,2].max())
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(X, Y, F)
+
+#############################
+# Given Data Points Plotting#
+#############################
+x1 = feature_matrix_training.iloc[:,1]
+x2 = feature_matrix_training.iloc[:,2]
+# ax.xlim(feature_matrix_training.iloc[:,1].min(), feature_matrix_training.iloc[:,1].max())
+# ax.ylim(feature_matrix_training.iloc[:,2].min(), feature_matrix_training.iloc[:,2].max())
+# ax.title('Decision Boundary')
+for i in range(len(x1)):
+        if(y_train[i] == 0):
+                ax.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='red')
+        else:
+                ax.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='green')
+plt.savefig('decision.png')
+plt.show()
+
+
+############################
+# Decision Boundary Plotting#
+############################
+n = 50
+x1= list(np.linspace(feature_matrix_training.iloc[:,1].min(), feature_matrix_training.iloc[:,1].max(), n))
+x2 = list(np.linspace(feature_matrix_training.iloc[:,2].min(), feature_matrix_training.iloc[:,2].max(), n))
+# X, Y = np.meshgrid(x, y)
 dataframe = pd.DataFrame([])
 
 #Meshgrid
@@ -354,29 +424,30 @@ for i in range(len(x1)):
         data_vector = pd.Series(data_vector)
         dataframe = dataframe.append(data_vector, ignore_index=True)
 
-feature_matrix_boundary = processable_feature_matrix(dataframe)
-y_probability = sigmoid_probabilty(feature_matrix_boundary,weights) #obtained Probability 
-y_predicted_boundary = predicted_y(y_probability)   #Classified Results
+dataframe = mapFeature(dataframe,degree)
+y_dataframe = sigmoid_probabilty(dataframe,weights) #obtained Probability 
+Y_predicted_dataframe = predicted_y(y_dataframe)   #Classified Results
 
-plt.xlim(training_set['x_1'].min(), training_set['x_1'].max())
-plt.ylim(training_set['x_2'].min(), training_set['x_2'].max())
-plt.title('Desicion Boundary and Surface for dataset-2', fontsize=20)
-plt.xlabel('x_1', fontsize=18)
-plt.ylabel('x_2', fontsize=16)
-for i in range(len(dataframe)):
-        if(y_predicted_boundary[i] == 0):
-                plt.scatter(dataframe.iloc[i,1], dataframe.iloc[i,2], marker='*',c='pink')
+x1 = dataframe.iloc[:,1]
+x2 = dataframe.iloc[:,2]
+plt.xlim(dataframe.iloc[:,1].min(), dataframe.iloc[:,1].max())
+plt.ylim(dataframe.iloc[:,2].min(), dataframe.iloc[:,2].max())
+for i in range(len(x1)):
+        if(Y_predicted_dataframe[i] == 0):
+                plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='o',c='pink')
         else:
-                plt.scatter(dataframe.iloc[i,1], dataframe.iloc[i,2], marker='*',c='yellow')
+                plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='o',c='orange')
+
 
 
 #############################
 # Given Data Points Plotting#
 #############################
-x1 = training_set['x_1']
-x2 = training_set['x_2']
-plt.xlim(training_set['x_1'].min(), training_set['x_1'].max())
-plt.ylim(training_set['x_2'].min(), training_set['x_2'].max())
+x1 = feature_matrix_training.iloc[:,1]
+x2 = feature_matrix_training.iloc[:,2]
+plt.xlim(feature_matrix_training.iloc[:,1].min(), feature_matrix_training.iloc[:,1].max())
+plt.ylim(feature_matrix_training.iloc[:,2].min(), feature_matrix_training.iloc[:,2].max())
+plt.title('Decision Boundary')
 for i in range(len(x1)):
         if(y_train[i] == 0):
                 plt.scatter(x1[i], x2[i], label='Scatter plot of Data', marker='*',c='red')
