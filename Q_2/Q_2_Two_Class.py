@@ -62,7 +62,6 @@ def mapFeature(dataset,degree):
         x2=dataset.iloc[:,1]
         for j in range(n): #for cal power
                 for r in range(j+1): #Nowards Loop calculates power
-                        print('r,J:',r,j)
                         colm_list = []
                         for i in range(len(dataset)):
                                 colm_list.append(choose(j,r) * pow(x1[i],j-r) * pow(x2[i],r))
@@ -75,7 +74,9 @@ def mapFeature(dataset,degree):
 # dataset = mapFeature(dataset,3)
 # dataset.to_csv('file.csv')
 
-##Processing 
+###############
+# Processing  #
+###############
 # Number of class in the dataset
 Data_class = dataset.iloc[:, -1].unique()  # classes in dataset
 Data_class = np.sort(Data_class)
@@ -98,10 +99,17 @@ def split_dataframe(df, p=[0.65, 0.35]):
 
         train,test = np.split(df.sample(frac=1,replace=False,random_state = 41), [int(p[0]*len(df))])  # split by [0-.7,.7-.85,.85-1]
         train = train.reset_index(drop = True) 
-        test = test.reset_index(drop = True) 
-        return train,test
+        X_train = train.iloc[:,:-1]       #feture matrix of data
+        X_train = mapFeature(X_train,degree)
+        y_train = train.iloc[:,-1]
 
-training_set ,testing_set = split_dataframe(dataset)
+        test = test.reset_index(drop = True) 
+        X_test = test.iloc[:,:-1]       #feture matrix of data
+        X_test = mapFeature(X_test,degree)
+        y_test = train.iloc[:,-1]
+
+        return X_train,X_test,y_train,y_test
+
 
 ####################
 # Intial Conditions#
@@ -109,12 +117,16 @@ training_set ,testing_set = split_dataframe(dataset)
 learning_rate = 0.5
 no_of_iterarion = 1000
 regularized_term = 1.5
+degree = 3
+no_of_terms = 0
+for i in range(degree+1):
+        no_of_terms += (i+1)
 
 ##Class wise intail weights 
-weights = np.linspace(-0.2,0.2,no_of_feature+1) #INTIAL WEIGHTS DEFINED
+weights = np.linspace(-0.2,0.2,no_of_terms) #INTIAL WEIGHTS DEFINED
 
 ################
-# Batch Graient#
+# Batch Gradient#
 ################
 def sigmoid_probabilty(feature_matrix,weights):
         '''
@@ -282,11 +294,9 @@ def confusion_matrix(actual_result, predicted_result):
     return conf_matrix
 
 
+feature_matrix_training, feature_matrix_testing, y_train, y_test = split_dataframe(dataset)
 
-#Calcualtion of Training 
-feature_matrix_training = training_set.iloc[:,:-1]       #feture matrix of data
-feature_matrix_training = processable_feature_matrix(feature_matrix_training)
-y_train = training_set.iloc[:,-1]
+#Calcualtion of Training     
 Weight_result , iteration,log_loss,probability_list,error_list   = Graient_descent(weights,y_train,learning_rate,feature_matrix_training,regularized_term,no_of_iterarion)
 
 #Result Writing to file 
@@ -295,12 +305,9 @@ file.write('\n \n Weight_result: '+ str(Weight_result))
 file.write('\n iteration: '+ str(iteration))
 
 #Testing 
-feature_matrix_testing = testing_set.iloc[:,:-1]
-feature_matrix_testing = processable_feature_matrix(feature_matrix_testing)
-y_actaul_test =testing_set.iloc[:,-1]   #dataset
 y_probability = sigmoid_probabilty(feature_matrix_testing,weights) #obtained Probability 
 y_predicted_test = predicted_y(y_probability)   #Classified Results
-test_accu,test_error = accuracy_result(y_predicted_test,y_actaul_test)  
+test_accu,test_error = accuracy_result(y_predicted_test,y_test)  
 file.write('\n test_error: '+ str(test_error))
 file.write('\n test_accu: '+ str(test_accu))
 
